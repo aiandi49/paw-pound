@@ -667,7 +667,7 @@ header {
 <header>
   <div class="logo">
     <div class="logo-dot"></div>
-    <div class="logo-text">Paw Pound</div>
+    <div class="logo-text">Paw Pack</div>
   </div>
   <div class="header-stats">
     <div class="hstat">
@@ -747,7 +747,7 @@ header {
 </div>
 
 <div class="bottom-bar">
-  <div class="bottom-logo"><em>Paw</em> Pound</div>
+  <div class="bottom-logo"><em>Paw</em> Pack</div>
   <div class="bottom-tagline">Real pets · Real votes · Always free</div>
   <button class="btn-add-pet" onclick="document.getElementById('upload-modal').classList.remove('hidden')">+ Add Your Pet</button>
 </div>
@@ -823,7 +823,7 @@ function buildCard(dog, cls) {
   d.dataset.id = dog.id;
   d.innerHTML = `
     <div class="swipe-hot-overlay" id="hot-overlay-${dog.id}"><div class="swipe-label">HOT 🔥</div></div>
-    <div class="swipe-not-overlay" id="not-overlay-${dog.id}"><div class="swipe-label">POUND 💧</div></div>
+    <div class="swipe-not-overlay" id="not-overlay-${dog.id}"><div class="swipe-label">NOPE 💧</div></div>
 
     <div class="dog-photo-wrap" id="photo-wrap-${dog.id}">
       <div class="photo-shimmer" id="shimmer-${dog.id}"></div>
@@ -981,8 +981,42 @@ function showInfo() {
   if (currentIdx >= deck.length) return;
   const dog = deck[currentIdx];
   const total = (dog.sessionHot||0) + (dog.sessionNot||0);
-  const scoreText = total > 0 ? `🔥 ${dog.sessionHot} hot  ·  💧 ${dog.sessionNot} not (this session)` : 'No votes yet this session';
-  alert(`🐾 ${dog.name}\n\nBreed: ${dog.breed}\nAge: ${dog.age} year${dog.age>1?'s':''}\n\n"${dog.bio}"\n\n${scoreText}`);
+  const scoreText = total > 0 ? `🔥 ${dog.sessionHot} hot &nbsp;·&nbsp; 💧 ${dog.sessionNot} not` : 'No votes yet';
+
+  // Remove any existing info card
+  const existing = document.getElementById('info-popup');
+  if (existing) existing.remove();
+
+  const popup = document.createElement('div');
+  popup.id = 'info-popup';
+  popup.style.cssText = `
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:#1B1B27;border:1px solid rgba(255,255,255,0.13);
+    border-radius:20px;padding:28px 32px;z-index:9999;
+    min-width:280px;max-width:340px;text-align:center;
+    box-shadow:0 24px 60px rgba(0,0,0,0.6);
+    font-family:'Cabinet Grotesk',sans-serif;color:#F0F0F8;
+  `;
+  popup.innerHTML = `
+    <div style="font-size:2rem;margin-bottom:8px;">🐾</div>
+    <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:1.6rem;margin-bottom:4px;">${dog.name}</div>
+    <div style="color:#8A8AA8;font-size:0.85rem;margin-bottom:16px;">${dog.breed} · ${dog.age} yr${dog.age>1?'s':''}</div>
+    <div style="font-style:italic;color:#C0C0D8;margin-bottom:16px;font-size:0.95rem;">"${dog.bio}"</div>
+    <div style="background:rgba(255,255,255,0.06);border-radius:10px;padding:10px;font-size:0.85rem;color:#8A8AA8;margin-bottom:20px;">${scoreText}</div>
+    <button onclick="document.getElementById('info-popup').remove()" style="
+      background:#FF5C6C;color:#fff;border:none;border-radius:12px;
+      padding:10px 28px;font-size:0.95rem;font-weight:700;cursor:pointer;
+      font-family:'Cabinet Grotesk',sans-serif;
+    ">Got it 🐾</button>
+  `;
+  document.body.appendChild(popup);
+
+  // Click outside to close
+  setTimeout(() => {
+    document.addEventListener('click', function handler(e) {
+      if (!popup.contains(e.target)) { popup.remove(); document.removeEventListener('click', handler); }
+    });
+  }, 100);
 }
 
 function resetDeck() {
