@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Paw Pound 🐾 Hot or Not for Pups</title>
+<title>Paw Pack 🐾 Hot or Not for Pups</title>
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -336,18 +336,9 @@ header {
   font-size: 0.8rem; font-weight: 500; color: var(--gold);
 }
 
-/* Status badge */
-.dog-status-badge {
-  position: absolute; top: 14px; left: 14px;
-  background: rgba(12,12,18,0.85);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 20px; padding: 4px 11px;
-  font-size: 0.63rem; font-weight: 700; color: var(--green);
-  letter-spacing: 0.06em;
-  display: flex; align-items: center; gap: 5px; z-index: 5;
-}
-.status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); }
+/* Status badge removed — was fake "Recently Active" */
+.dog-status-badge { display: none; }
+.status-dot { display: none; }
 
 /* Card info */
 .dog-info { padding: 16px 18px 20px; }
@@ -515,9 +506,15 @@ header {
 .bottom-logo { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 0.95rem; color: var(--text2); }
 .bottom-logo em { color: var(--accent); font-style: normal; }
 .bottom-tagline { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: var(--text3); }
-.live-badge { display: flex; align-items: center; gap: 6px; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--green); }
-.live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: blink 1.4s infinite; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+.btn-add-pet {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(255,92,108,0.12); border: 1px solid rgba(255,92,108,0.3);
+  color: var(--accent); border-radius: 20px; padding: 6px 14px;
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 0.62rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-add-pet:hover { background: rgba(255,92,108,0.2); border-color: var(--accent); }
 
 /* ── STREAK BANNER ── */
 .streak-banner {
@@ -555,11 +552,115 @@ header {
   header { padding: 0 18px; }
   .header-stats { gap: 16px; }
 }
+/* ── UPLOAD MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(7,7,15,0.92); backdrop-filter: blur(18px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  transition: opacity 0.3s;
+}
+.modal-overlay.hidden { display: none; }
+.modal-box {
+  background: var(--card); border: 1px solid var(--border2);
+  border-radius: 24px; padding: 40px 36px; max-width: 400px; width: 100%;
+  box-shadow: 0 40px 120px rgba(0,0,0,0.7);
+}
+.modal-title {
+  font-family: 'Instrument Serif', serif; font-size: 1.9rem;
+  color: var(--text); margin-bottom: 8px; line-height: 1.1;
+}
+.modal-title em { font-style: italic; color: var(--accent); }
+.modal-sub { font-size: 0.82rem; color: var(--text2); margin-bottom: 24px; line-height: 1.55; }
+.upload-zone {
+  width: 100%; aspect-ratio: 4/3; border-radius: 14px;
+  border: 2px dashed var(--border2); background: var(--bg2);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; cursor: pointer; transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 18px; overflow: hidden; position: relative;
+}
+.upload-zone:hover { border-color: var(--accent); background: rgba(255,92,108,0.04); }
+.upload-zone img.preview-img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; border-radius: 12px; }
+.upload-icon { font-size: 2rem; }
+.upload-label { font-size: 0.8rem; font-weight: 700; color: var(--text2); }
+.upload-hint { font-size: 0.66rem; color: var(--text3); }
+#pet-upload-input { display: none; }
+.modal-fields { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.field-label { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.spk-btn {
+  font-size: 0.58rem; font-weight: 700; letter-spacing: 0.06em;
+  padding: 2px 8px; border-radius: 20px;
+  border: 1px solid rgba(0,205,180,0.4);
+  background: rgba(0,205,180,0.08);
+  color: #00CDB4; cursor: pointer;
+  transition: all 0.2s; white-space: nowrap;
+  font-family: inherit; text-transform: uppercase;
+}
+.spk-btn:hover { background: rgba(0,205,180,0.18); border-color: rgba(0,205,180,0.7); }
+.spk-btn.listening { background: rgba(255,60,60,0.15); border-color: rgba(255,60,60,0.6); color: #ff4444; }
+.field-input {
+  width: 100%; background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 10px; padding: 10px 13px;
+  font-family: 'Cabinet Grotesk', sans-serif; font-size: 0.88rem; font-weight: 600;
+  color: var(--text); outline: none; transition: border-color 0.2s;
+}
+.field-input:focus { border-color: var(--accent); }
+.field-input::placeholder { color: var(--text3); font-weight: 400; }
+.btn-submit-pet {
+  width: 100%; background: var(--accent); color: #fff; border: none;
+  border-radius: 12px; padding: 14px;
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 0.92rem; font-weight: 800; letter-spacing: 0.04em; cursor: pointer;
+  box-shadow: 0 6px 32px var(--accent-glow); transition: all 0.2s;
+}
+.btn-submit-pet:hover { transform: translateY(-2px); box-shadow: 0 10px 44px var(--accent-glow); }
+.btn-skip {
+  display: block; text-align: center; margin-top: 12px;
+  font-size: 0.72rem; color: var(--text3); cursor: pointer;
+  transition: color 0.2s;
+}
+.btn-skip:hover { color: var(--text2); }
+
 </style>
-</head>
 <body>
 
-<canvas id="confetti-canvas"></canvas>
+<!-- ── UPLOAD YOUR PET MODAL ── -->
+<div class="modal-overlay" id="upload-modal">
+  <div class="modal-box">
+    <div class="modal-title">Add your <em>pup</em> to the pack.</div>
+    <div class="modal-sub">Upload a real photo of your pet. They'll join the pack and get voted on by the community. Real pets only — no fakes allowed.</div>
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('pet-upload-input').click()">
+      <div class="upload-icon">📸</div>
+      <div class="upload-label">Tap to upload photo</div>
+      <div class="upload-hint">JPG or PNG · Your pet only</div>
+    </div>
+    <input type="file" id="pet-upload-input" accept="image/*">
+    <div class="modal-fields">
+      <div>
+        <div class="field-label">Pet's Name * <button type="button" onclick="startVoice('pet-name',this)" class="spk-btn">🎤 Speak</button></div>
+        <input class="field-input" id="pet-name" placeholder="e.g. Biscuit" maxlength="24">
+      </div>
+      <div class="field-row">
+        <div>
+          <div class="field-label">Breed <button type="button" onclick="startVoice('pet-breed',this)" class="spk-btn">🎤 Speak</button></div>
+          <input class="field-input" id="pet-breed" placeholder="e.g. Corgi" maxlength="30">
+        </div>
+        <div>
+          <div class="field-label">Age</div>
+          <input class="field-input" id="pet-age" placeholder="e.g. 2" type="number" min="0" max="30">
+        </div>
+      </div>
+      <div>
+        <div class="field-label">One-liner bio <button type="button" onclick="startVoice('pet-bio',this)" class="spk-btn">🎤 Speak</button></div>
+        <input class="field-input" id="pet-bio" placeholder="e.g. Owns the couch, rents to us." maxlength="60">
+      </div>
+    </div>
+    <button class="btn-submit-pet" onclick="submitPet()">Add to the Pack 🐾</button>
+    <div class="btn-skip" onclick="skipUpload()">Skip for now — just vote</div>
+  </div>
+</div>
+
+
 <div class="streak-banner" id="streak-banner">🔥 Hot streak ×<span id="streak-num">3</span></div>
 
 <!-- HEADER -->
@@ -603,12 +704,12 @@ header {
     <div class="screen active" id="screen-main">
       <div class="card-stack" id="card-stack"></div>
       <div class="actions">
-        <button class="btn-not" onclick="vote('not')" title="Back to the pound (← key)">💧</button>
+        <button class="btn-not" onclick="vote('not')" title="Not this one (← key)">💧</button>
         <button class="btn-info" onclick="showInfo()" title="Puppy profile (↑ key)">⭐</button>
         <button class="btn-hot" onclick="vote('hot')" title="Hot pup! (→ key)">🔥</button>
       </div>
       <div class="vote-hint">
-        <div class="hint"><span class="hint-key">←</span> Pound</div>
+        <div class="hint"><span class="hint-key">←</span> Nope</div>
         <div class="hint">Drag to vote</div>
         <div class="hint">Hot <span class="hint-key">→</span></div>
       </div>
@@ -628,7 +729,7 @@ header {
       <div class="match-screen">
         <div class="match-eyebrow">All Done</div>
         <div class="match-title">Every <em>Pup</em> Rated</div>
-        <div class="match-sub">You're a true dog connoisseur. Come back when more pups enter the pound!</div>
+        <div class="match-sub">You're a true dog connoisseur. Come back when more pups join the pack!</div>
         <button class="btn-continue" onclick="resetDeck()">Rate Again 🔄</button>
       </div>
     </div>
@@ -647,8 +748,8 @@ header {
 
 <div class="bottom-bar">
   <div class="bottom-logo"><em>Paw</em> Pound</div>
-  <div class="bottom-tagline">Built for dog lovers · PawMatch Ecosystem</div>
-  <div class="live-badge"><div class="live-dot"></div> Live</div>
+  <div class="bottom-tagline">Real pets · Real votes · Always free</div>
+  <button class="btn-add-pet" onclick="document.getElementById('upload-modal').classList.remove('hidden')">+ Add Your Pet</button>
 </div>
 
 <script>
@@ -656,18 +757,18 @@ header {
 // DOG DATA — breed maps to dog.ceo API breed slugs
 // ═══════════════════════════════════════════════════════
 const DOGS = [
-  { id:1,  name:"Biscuit",  age:2, breed:"Golden Retriever",  apiBreed:"retriever/golden",     tags:["fluffy","gentle","fetch pro"],   tagTypes:["gold","green","blue"],  hotScore:94, bio:"Loves belly rubs and stolen socks." },
-  { id:2,  name:"Nacho",    age:4, breed:"Chihuahua",          apiBreed:"chihuahua",            tags:["smol","feisty","big energy"],    tagTypes:["blue","pink","gold"],   hotScore:77, bio:"Tiny but acts like he owns the park." },
-  { id:3,  name:"Duchess",  age:6, breed:"Dalmatian",          apiBreed:"dalmatian",            tags:["spotted","majestic","model"],    tagTypes:["gold","gold","pink"],   hotScore:88, bio:"Head-turning everywhere she goes." },
-  { id:4,  name:"Pretzel",  age:1, breed:"Dachshund",          apiBreed:"dachshund",            tags:["smol","loaf shaped","speedy"],   tagTypes:["blue","green","green"], hotScore:91, bio:"Low rider. Big heart." },
-  { id:5,  name:"Zeus",     age:3, breed:"Great Dane",          apiBreed:"dane/great",           tags:["gentle giant","drools","couch"], tagTypes:["gold","pink","blue"],   hotScore:85, bio:"Thinks he's a lap dog. He is not." },
-  { id:6,  name:"Mochi",    age:2, breed:"Shiba Inu",           apiBreed:"shiba",                tags:["doge","much wow","fluffy"],      tagTypes:["gold","gold","gold"],   hotScore:97, bio:"Much wow. Very doge. Such floof." },
-  { id:7,  name:"Waffle",   age:5, breed:"French Bulldog",      apiBreed:"bulldog/french",       tags:["squishy face","snores","couch"], tagTypes:["pink","blue","blue"],   hotScore:89, bio:"Snores louder than your uncle." },
-  { id:8,  name:"Ranger",   age:7, breed:"Border Collie",       apiBreed:"collie/border",        tags:["genius","herder","obsessive"],   tagTypes:["green","gold","pink"],  hotScore:82, bio:"Will reorganize your life whether you want it or not." },
-  { id:9,  name:"Pudding",  age:3, breed:"Pomeranian",          apiBreed:"pomeranian",           tags:["floof","smol","princess"],       tagTypes:["gold","blue","pink"],   hotScore:93, bio:"Demands royal treatment. Gets it." },
-  { id:10, name:"Tank",     age:4, breed:"Bulldog",             apiBreed:"bulldog/english",      tags:["built different","naps","loyal"],tagTypes:["gold","blue","green"],  hotScore:79, bio:"Built like a truck. Sleeps like a log." },
-  { id:11, name:"Cheddar",  age:1, breed:"Corgi",               apiBreed:"corgi/cardigan",       tags:["low rider","zoom zoom","ears"],  tagTypes:["gold","pink","green"],  hotScore:96, bio:"Has the zoomies. All of them." },
-  { id:12, name:"Storm",    age:5, breed:"Husky",               apiBreed:"husky",                tags:["drama queen","howls","ice wolf"],tagTypes:["pink","pink","blue"],   hotScore:90, bio:"Has 47 opinions about dinner." },
+  { id:1,  name:"Biscuit",  age:2, breed:"Golden Retriever",  apiBreed:"retriever/golden",     tags:["fluffy","gentle","fetch pro"],   tagTypes:["gold","green","blue"],  sessionHot:0, sessionNot:0, bio:"Loves belly rubs and stolen socks." },
+  { id:2,  name:"Nacho",    age:4, breed:"Chihuahua",          apiBreed:"chihuahua",            tags:["smol","feisty","big energy"],    tagTypes:["blue","pink","gold"],   sessionHot:0, sessionNot:0, bio:"Tiny but acts like he owns the park." },
+  { id:3,  name:"Duchess",  age:6, breed:"Dalmatian",          apiBreed:"dalmatian",            tags:["spotted","majestic","model"],    tagTypes:["gold","gold","pink"],   sessionHot:0, sessionNot:0, bio:"Head-turning everywhere she goes." },
+  { id:4,  name:"Pretzel",  age:1, breed:"Dachshund",          apiBreed:"dachshund",            tags:["smol","loaf shaped","speedy"],   tagTypes:["blue","green","green"], sessionHot:0, sessionNot:0, bio:"Low rider. Big heart." },
+  { id:5,  name:"Zeus",     age:3, breed:"Great Dane",          apiBreed:"dane/great",           tags:["gentle giant","drools","couch"], tagTypes:["gold","pink","blue"],   sessionHot:0, sessionNot:0, bio:"Thinks he's a lap dog. He is not." },
+  { id:6,  name:"Mochi",    age:2, breed:"Shiba Inu",           apiBreed:"shiba",                tags:["doge","much wow","fluffy"],      tagTypes:["gold","gold","gold"],   sessionHot:0, sessionNot:0, bio:"Much wow. Very doge. Such floof." },
+  { id:7,  name:"Waffle",   age:5, breed:"French Bulldog",      apiBreed:"bulldog/french",       tags:["squishy face","snores","couch"], tagTypes:["pink","blue","blue"],   sessionHot:0, sessionNot:0, bio:"Snores louder than your uncle." },
+  { id:8,  name:"Ranger",   age:7, breed:"Border Collie",       apiBreed:"collie/border",        tags:["genius","herder","obsessive"],   tagTypes:["green","gold","pink"],  sessionHot:0, sessionNot:0, bio:"Will reorganize your life whether you want it or not." },
+  { id:9,  name:"Pudding",  age:3, breed:"Pomeranian",          apiBreed:"pomeranian",           tags:["floof","smol","princess"],       tagTypes:["gold","blue","pink"],   sessionHot:0, sessionNot:0, bio:"Demands royal treatment. Gets it." },
+  { id:10, name:"Tank",     age:4, breed:"Bulldog",             apiBreed:"bulldog/english",      tags:["built different","naps","loyal"],tagTypes:["gold","blue","green"],  sessionHot:0, sessionNot:0, bio:"Built like a truck. Sleeps like a log." },
+  { id:11, name:"Cheddar",  age:1, breed:"Corgi",               apiBreed:"corgi/cardigan",       tags:["low rider","zoom zoom","ears"],  tagTypes:["gold","pink","green"],  sessionHot:0, sessionNot:0, bio:"Has the zoomies. All of them." },
+  { id:12, name:"Storm",    age:5, breed:"Husky",               apiBreed:"husky",                tags:["drama queen","howls","ice wolf"],tagTypes:["pink","pink","blue"],   sessionHot:0, sessionNot:0, bio:"Has 47 opinions about dinner." },
 ];
 
 // ═══════════════════════════════════════════════════════
@@ -677,6 +778,9 @@ const photoCache = {};   // id → url string
 const photoPromises = {};// id → promise
 
 async function fetchDogPhoto(dog) {
+  // User-uploaded pets: photo already in cache as dataURL
+  if (dog.isUserPet) return photoCache[dog.id] || null;
+
   if (photoCache[dog.id]) return photoCache[dog.id];
   if (photoPromises[dog.id]) return photoPromises[dog.id];
 
@@ -704,19 +808,11 @@ let deck = [...DOGS].sort(() => Math.random() - 0.5);
 let currentIdx = 0;
 let hotVotes = 0, notVotes = 0, totalRated = 0;
 let hotStreak = 0, notStreak = 0;
-let leaderboard = DOGS.map(d => ({...d, votes: d.hotScore + Math.floor(Math.random()*30)}));
+let leaderboard = DOGS.map(d => ({...d, votes: d.sessionHot}));
 leaderboard.sort((a,b) => b.votes - a.votes);
 
-const activities = [
-  {user:"Jake from Tucson",   dog:"Mochi",  verdict:"hot", time:"2s ago",  emoji:"👦", dogId:6},
-  {user:"Sarah T.",           dog:"Cheddar",verdict:"hot", time:"8s ago",  emoji:"👩", dogId:11},
-  {user:"GoldenMom92",        dog:"Nacho",  verdict:"not", time:"15s ago", emoji:"👩‍🦳", dogId:2},
-  {user:"PuppyJudge™",        dog:"Duchess",verdict:"hot", time:"23s ago", emoji:"🧑", dogId:3},
-  {user:"DogDad_AZ",          dog:"Tank",   verdict:"hot", time:"41s ago", emoji:"👨", dogId:10},
-  {user:"FluffEnthusiast",    dog:"Pudding",verdict:"hot", time:"1m ago",  emoji:"🧒", dogId:9},
-  {user:"RescueMom",          dog:"Ranger", verdict:"not", time:"1m ago",  emoji:"👩", dogId:8},
-  {user:"BorkBork99",         dog:"Storm",  verdict:"hot", time:"2m ago",  emoji:"🧔", dogId:12},
-];
+const activities = [];
+
 
 // ═══════════════════════════════════════════════════════
 // BUILD CARD  — injects real photo async
@@ -736,10 +832,9 @@ function buildCard(dog, cls) {
            style="opacity:0"
            onerror="this.style.display='none'"
       />
-      <div class="dog-status-badge" style="z-index:6"><div class="status-dot"></div>Recently Active</div>
       <div class="dog-score-bar" style="z-index:6">
         <span class="score-fire">🔥</span>
-        <span class="score-val">${dog.hotScore}%</span>
+        <span class="score-val" id="score-${dog.id}">${dog.sessionHot > 0 ? dog.sessionHot + ' hot' : '—'}</span>
       </div>
     </div>
 
@@ -833,17 +928,20 @@ function vote(type) {
 
   front.classList.add(type === 'hot' ? 'swiping-right' : 'swiping-left');
 
+  // Track real per-dog session votes
   if (type === 'hot') {
+    dog.sessionHot = (dog.sessionHot || 0) + 1;
     hotVotes++; hotStreak++; notStreak = 0;
     document.getElementById('stat-hot').textContent = hotVotes;
     if (hotStreak >= 3) showStreak(hotStreak);
-    if (Math.random() < 0.25) {
+    if (hotVotes > 0 && hotVotes % 5 === 0) {
       setTimeout(() => showMatch(dog), 400);
     } else {
       setTimeout(() => nextCard(), 400);
     }
     spawnConfetti();
   } else {
+    dog.sessionNot = (dog.sessionNot || 0) + 1;
     notVotes++; notStreak++; hotStreak = 0;
     document.getElementById('stat-not').textContent = notVotes;
     setTimeout(() => nextCard(), 400);
@@ -852,6 +950,7 @@ function vote(type) {
   document.getElementById('stat-rated').textContent = totalRated;
   addActivity(dog, type);
   updateLeaderboard(dog, type);
+  recordVote(dog.id, type);
 }
 
 function nextCard() { currentIdx++; showScreen('main'); renderDeck(); }
@@ -881,7 +980,9 @@ function showScreen(name) {
 function showInfo() {
   if (currentIdx >= deck.length) return;
   const dog = deck[currentIdx];
-  alert(`🐾 ${dog.name}\n\nBreed: ${dog.breed}\nAge: ${dog.age} year${dog.age>1?'s':''}\n\n"${dog.bio}"\n\nHot score: ${dog.hotScore}%`);
+  const total = (dog.sessionHot||0) + (dog.sessionNot||0);
+  const scoreText = total > 0 ? `🔥 ${dog.sessionHot} hot  ·  💧 ${dog.sessionNot} not (this session)` : 'No votes yet this session';
+  alert(`🐾 ${dog.name}\n\nBreed: ${dog.breed}\nAge: ${dog.age} year${dog.age>1?'s':''}\n\n"${dog.bio}"\n\n${scoreText}`);
 }
 
 function resetDeck() {
@@ -960,6 +1061,10 @@ function filterLB(btn, filter) {
 // ═══════════════════════════════════════════════════════
 function renderActivityFeed() {
   const el = document.getElementById('activity-feed');
+  if (activities.length === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:24px 0;color:var(--text3);font-size:0.85rem;letter-spacing:0.05em;">Your votes will appear here 🐾</div>`;
+    return;
+  }
   el.innerHTML = activities.map(a => {
     const dog = DOGS.find(d => d.id === a.dogId);
     const url = dog ? photoCache[dog.id] : null;
@@ -980,14 +1085,13 @@ function renderActivityFeed() {
 }
 
 function addActivity(dog, type) {
-  const users = ["DogFan42","PupLover","BorkMaster","WoofJudge","FluffyFan","SnootBooper","TailWagger"];
-  const emojis = ["👦","👩","🧑","👨","🧒","🧔","👩‍🦳"];
-  const idx = Math.floor(Math.random() * users.length);
-  activities.unshift({ user: users[idx], dog: dog.name, verdict: type, time: "just now", emoji: emojis[idx], dogId: dog.id });
-  activities.splice(12);
+  const now = new Date();
+  activities.unshift({ user: "You", dog: dog.name, verdict: type, time: "just now", emoji: "🐾", dogId: dog.id, ts: now });
+  activities.splice(20);
   activities.forEach((a, i) => {
     if (i > 0) {
-      const secs = [5,12,20,35,55,75,100,130,160,200,240,290][i] || 300;
+      const diffMs = now - a.ts;
+      const secs = Math.floor(diffMs / 1000);
       a.time = secs < 60 ? `${secs}s ago` : `${Math.floor(secs/60)}m ago`;
     }
   });
@@ -1031,9 +1135,9 @@ document.addEventListener('keydown', e => {
 // CONFETTI
 // ═══════════════════════════════════════════════════════
 const canvas = document.getElementById('confetti-canvas');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+const ctx = canvas ? canvas.getContext('2d') : null;
+if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', () => { if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; } });
 let particles = [], confettiRunning = false;
 
 function spawnConfetti() {
@@ -1052,6 +1156,7 @@ function spawnConfetti() {
   if (!confettiRunning) animateConfetti();
 }
 function animateConfetti() {
+  if (!ctx || !canvas) return;
   confettiRunning = true;
   ctx.clearRect(0,0,canvas.width,canvas.height);
   particles.forEach(p => {
@@ -1067,28 +1172,280 @@ function animateConfetti() {
 }
 
 // ═══════════════════════════════════════════════════════
-// LIVE SIMULATION
+// UPLOAD YOUR PET — modal logic
 // ═══════════════════════════════════════════════════════
-setInterval(() => {
-  const dog = DOGS[Math.floor(Math.random()*DOGS.length)];
-  const type = Math.random() > 0.35 ? 'hot' : 'not';
-  addActivity(dog, type);
-  if (type === 'hot') {
-    const entry = leaderboard.find(d => d.id === dog.id);
-    if (entry) entry.votes += Math.floor(Math.random()*3)+1;
-    leaderboard.sort((a,b) => b.votes - a.votes);
-    renderLeaderboard();
-  }
-}, 4000);
+let userPetPhotoData = null;
+
+document.getElementById('pet-upload-input').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    userPetPhotoData = e.target.result;
+    const zone = document.getElementById('upload-zone');
+    // Show preview
+    let previewImg = zone.querySelector('.preview-img');
+    if (!previewImg) {
+      previewImg = document.createElement('img');
+      previewImg.className = 'preview-img';
+      zone.appendChild(previewImg);
+    }
+    previewImg.src = userPetPhotoData;
+    // Hide the text prompts
+    zone.querySelectorAll('.upload-icon, .upload-label, .upload-hint').forEach(el => el.style.display = 'none');
+  };
+  reader.readAsDataURL(file);
+});
+
+async function submitPet() {
+  const name = document.getElementById('pet-name').value.trim();
+  if (!name) { document.getElementById('pet-name').focus(); return; }
+
+  const breed = document.getElementById('pet-breed').value.trim() || 'Mixed';
+  const age   = parseInt(document.getElementById('pet-age').value) || 1;
+  const bio   = document.getElementById('pet-bio').value.trim() || 'Ready to be judged. 🐾';
+
+  // Show loading state
+  const btn = document.querySelector('.btn-submit-pet');
+  const origText = btn.textContent;
+  btn.textContent = 'Saving to the pack…';
+  btn.disabled = true;
+
+  // 1. Upload photo to Supabase Storage (pet-photos/pack/)
+  let photoUrl = '';
+  if (userPetPhotoData) photoUrl = await uploadPackPhoto(userPetPhotoData, name);
+
+  // 2. Save pup profile to paw_pack table
+  const supaId = await savePackPet({ name, breed, age, bio }, photoUrl);
+
+  // 3. Build local pet object
+  const localId = supaId ? 'supa_' + supaId : 'local_' + Date.now();
+  const userPet = {
+    id: localId, supaId: supaId || null,
+    name, breed, age, bio, apiBreed: null,
+    tags: [breed.split(' ').pop().toLowerCase(), `${age}yr`, 'community pet'],
+    tagTypes: ['gold', 'blue', 'green'],
+    sessionHot: 0, sessionNot: 0,
+    isUserPet: true, fromSupabase: !!supaId
+  };
+
+  // 4. Cache photo locally
+  if (userPetPhotoData) photoCache[localId] = userPetPhotoData;
+  else if (photoUrl)    photoCache[localId] = photoUrl;
+
+  // 5. Inject into app state
+  DOGS.unshift(userPet);
+  leaderboard.unshift({ ...userPet, votes: 0 });
+  deck.unshift(userPet);
+
+  // 6. Reset + close
+  btn.textContent = origText;
+  btn.disabled = false;
+  document.getElementById('upload-modal').classList.add('hidden');
+
+  renderLeaderboard();
+  renderBreedChart();
+  renderDeck();
+}
+
+function skipUpload() {
+  document.getElementById('upload-modal').classList.add('hidden');
+}
+
+// ═══════════════════════════════════════════════════════
+// SUPABASE — tucson-pet-finder project
+// ═══════════════════════════════════════════════════════
+const SURL = "https://msuqflssqixsplcearxr.supabase.co";
+const SKEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zdXFmbHNzcWl4c3BsY2VhcnhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMzU3NDgsImV4cCI6MjA4OTcxMTc0OH0.BlrDiIu2YdDB7oHJ0fFiSEiBDQGvHCFAUaysR6O24zk";
+const SH   = { "Content-Type": "application/json", "apikey": SKEY, "Authorization": "Bearer " + SKEY };
+
+function getSessionId() {
+  let sid = localStorage.getItem('pp_session');
+  if (!sid) { sid = 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2); localStorage.setItem('pp_session', sid); }
+  return sid;
+}
+
+async function uploadPackPhoto(dataUrl, petName) {
+  try {
+    const res  = await fetch(dataUrl);
+    const blob = await res.blob();
+    const ext  = blob.type === 'image/png' ? 'png' : 'jpg';
+    const path = `pack/${Date.now()}-${petName.replace(/\s+/g,'-').toLowerCase()}.${ext}`;
+    const up   = await fetch(`${SURL}/storage/v1/object/pet-photos/${path}`, {
+      method: 'POST',
+      headers: { "apikey": SKEY, "Authorization": "Bearer " + SKEY, "Content-Type": blob.type, "x-upsert": "true" },
+      body: blob
+    });
+    if (!up.ok) { return ''; }
+    return `${SURL}/storage/v1/object/public/pet-photos/${path}`;
+  } catch (e) { return ''; }
+}
+
+async function savePackPet(pet, photoUrl) {
+  try {
+    const r = await fetch(`${SURL}/rest/v1/paw_pack`, {
+      method: 'POST',
+      headers: { ...SH, "Prefer": "return=representation" },
+      body: JSON.stringify({ name: pet.name, breed: pet.breed, age: pet.age, bio: pet.bio, photo_url: photoUrl || '', hot_votes: 0, not_votes: 0, source: 'paw-pack' })
+    });
+    if (!r.ok) { return null; }
+    const data = await r.json();
+    return data[0]?.id || null;
+  } catch (e) { return null; }
+}
+
+async function recordVote(petId, voteType) {
+  if (!petId || !String(petId).startsWith('supa_')) return;
+  const realId = String(petId).replace('supa_', '');
+  try {
+    fetch(`${SURL}/rest/v1/paw_pack_votes`, {
+      method: 'POST', headers: { ...SH, "Prefer": "return=minimal" },
+      body: JSON.stringify({ pet_id: parseInt(realId), vote_type: voteType, session_id: getSessionId() })
+    });
+    const cur = await fetch(`${SURL}/rest/v1/paw_pack?id=eq.${realId}&select=hot_votes,not_votes`, { headers: SH });
+    const row = (await cur.json())[0];
+    if (!row) return;
+    const update = voteType === 'hot' ? { hot_votes: (row.hot_votes || 0) + 1 } : { not_votes: (row.not_votes || 0) + 1 };
+    fetch(`${SURL}/rest/v1/paw_pack?id=eq.${realId}`, {
+      method: 'PATCH', headers: { ...SH, "Prefer": "return=minimal" }, body: JSON.stringify(update)
+    });
+  } catch (e) { }
+}
+
+async function loadPackPets() {
+  try {
+    const r = await fetch(`${SURL}/rest/v1/paw_pack?select=*&order=hot_votes.desc`, { headers: SH });
+    if (!r.ok) return;
+    const rows = await r.json();
+    if (!rows || !rows.length) return;
+    rows.forEach(row => {
+      if (DOGS.find(d => d.supaId === row.id)) return;
+      const pet = {
+        id: 'supa_' + row.id, supaId: row.id,
+        name: row.name, breed: row.breed || 'Mixed', age: row.age || 1, bio: row.bio || '',
+        apiBreed: null,
+        tags: [(row.breed || '').split(' ').pop().toLowerCase() || 'pup', `${row.age || 1}yr`, 'community'],
+        tagTypes: ['gold', 'blue', 'green'],
+        sessionHot: row.hot_votes || 0, sessionNot: row.not_votes || 0,
+        isUserPet: true, fromSupabase: true
+      };
+      if (row.photo_url) photoCache[pet.id] = row.photo_url;
+      DOGS.unshift(pet);
+      leaderboard.unshift({ ...pet, votes: row.hot_votes || 0 });
+      deck.unshift(pet);
+    });
+    leaderboard.sort((a, b) => b.votes - a.votes);
+    renderLeaderboard(); renderBreedChart(); renderDeck();
+  } catch (e) { /* network unavailable in preview — works fine when deployed */ }
+}
 
 // ═══════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// VOICE / SPEAK ENGINE
+// ═══════════════════════════════════════════════════════
+var _SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var _recog = null;
+var _activeField = null;
+var _activeBtn = null;
+var _silenceTimer = null;
+var _finalText = "";
+var _isListening = false;
+
+function _setBtn(btn, listening) {
+  if (!btn) return;
+  if (listening) {
+    btn.setAttribute("data-orig", btn.textContent);
+    btn.textContent = "🔴 Listening...";
+    btn.classList.add("listening");
+  } else {
+    var orig = btn.getAttribute("data-orig");
+    if (orig) btn.textContent = orig;
+    btn.classList.remove("listening");
+  }
+}
+
+function startVoice(fieldId, btn) {
+  if (!btn && window.event) btn = window.event.currentTarget || window.event.target;
+  if (!_SR) {
+    alert("Voice input not supported on this browser.\n\niPhone: use Safari\nAndroid: use Chrome\n\nMake sure microphone permission is allowed.");
+    return;
+  }
+  if (_isListening) {
+    if (_recog) { try { _recog.abort(); } catch(e) {} }
+    _recog = null; _isListening = false;
+    _setBtn(_activeBtn, false);
+    if (_activeField === fieldId) {
+      var el = document.getElementById(fieldId);
+      if (el) { el.style.borderColor = ""; el.placeholder = ""; }
+      clearTimeout(_silenceTimer);
+      _activeField = null; _activeBtn = null;
+      return;
+    }
+  }
+  _activeBtn = btn || null;
+  doVoiceStart(fieldId);
+}
+
+function doVoiceStart(fieldId) {
+  var el = document.getElementById(fieldId);
+  if (!el) return;
+  if (_recog) { try { _recog.abort(); } catch(e) {} _recog = null; }
+  _recog = new _SR();
+  _recog.lang = "en-US";
+  _recog.maxAlternatives = 1;
+  _recog.continuous = true;
+  _recog.interimResults = true;
+  _activeField = fieldId;
+  _finalText = "";
+  _isListening = true;
+  el.style.borderColor = "rgba(0,205,180,0.6)";
+  el.placeholder = "🎤 Listening... speak now!";
+  el.focus();
+  _setBtn(_activeBtn, true);
+  clearTimeout(_silenceTimer);
+  _silenceTimer = setTimeout(function() { if (_recog && _isListening) _recog.stop(); }, 15000);
+  _recog.onresult = function(e) {
+    _finalText = "";
+    var interim = "";
+    for (var i = 0; i < e.results.length; i++) {
+      if (e.results[i].isFinal) _finalText += e.results[i][0].transcript + " ";
+      else interim += e.results[i][0].transcript;
+    }
+    el.value = (_finalText + interim).trim();
+    clearTimeout(_silenceTimer);
+    _silenceTimer = setTimeout(function() { if (_recog && _isListening) _recog.stop(); }, 15000);
+  };
+  _recog.onerror = function(e) {
+    if (e.error === "no-speech") return;
+    _isListening = false; _setBtn(_activeBtn, false);
+    el.style.borderColor = ""; el.placeholder = "";
+    clearTimeout(_silenceTimer);
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      alert("Microphone access denied.\n\niPhone Safari: Settings → Safari → Microphone → Allow\nAndroid Chrome: tap the 🔒 lock → Microphone → Allow\n\nThen reload and try again.");
+    }
+  };
+  _recog.onend = function() {
+    _isListening = false; clearTimeout(_silenceTimer);
+    if (_finalText.trim()) el.value = _finalText.trim();
+    el.style.borderColor = ""; el.placeholder = "";
+    _setBtn(_activeBtn, false);
+    _activeField = null; _activeBtn = null;
+  };
+  try { _recog.start(); } catch(e) {
+    _isListening = false; el.style.borderColor = ""; el.placeholder = "";
+    _setBtn(_activeBtn, false);
+  }
+}
+
 prefetchAllPhotos();
 renderLeaderboard();
 renderActivityFeed();
 renderBreedChart();
 renderDeck();
+loadPackPets();
+document.getElementById('upload-modal').classList.remove('hidden');
 </script>
 </body>
 </html>
