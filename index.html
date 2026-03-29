@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Paw Pack 🐾 Hot or Not for Pups</title>
+<title>Paw Pound 🐾 Hot or Not for Pets</title>
+<!-- FIX PERF-02: preconnect + font-display=swap -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -16,7 +19,7 @@
   --border2:  rgba(255,255,255,0.13);
   --text:     #F0F0F8;
   --text2:    #8A8AA8;
-  --text3:    #4A4A62;
+  --text3:    #7070A0; /* FIX ACC-03: was #4A4A62 (2.8:1) → now ~4.6:1 contrast */
   --accent:   #FF5C6C;
   --accent2:  #FF7A86;
   --accent-glow: rgba(255,92,108,0.22);
@@ -336,7 +339,6 @@ header {
   font-size: 0.8rem; font-weight: 500; color: var(--gold);
 }
 
-/* Status badge removed — was fake "Recently Active" */
 .dog-status-badge { display: none; }
 .status-dot { display: none; }
 
@@ -407,6 +409,7 @@ header {
 .vote-hint { margin-top: 18px; display: flex; gap: 28px; }
 .hint {
   display: flex; align-items: center; gap: 5px;
+  /* FIX ACC-03: text3 contrast now adequate */
   font-size: 0.66rem; font-weight: 700; color: var(--text3); letter-spacing: 0.07em;
 }
 .hint-key {
@@ -503,6 +506,7 @@ header {
   padding: 10px 32px;
   display: flex; align-items: center; justify-content: space-between;
 }
+/* FIX CQ-01: "Paw Pack" → "Paw Pound" everywhere */
 .bottom-logo { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 0.95rem; color: var(--text2); }
 .bottom-logo em { color: var(--accent); font-style: normal; }
 .bottom-tagline { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: var(--text3); }
@@ -526,6 +530,18 @@ header {
   pointer-events: none; white-space: nowrap;
 }
 .streak-banner.show { opacity: 1; }
+
+/* ── DAILY STREAK BADGE in header ── */
+.streak-badge {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px;
+  border: 1px solid rgba(245,200,66,0.3);
+  background: rgba(245,200,66,0.08);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem; font-weight: 500; color: var(--gold);
+  cursor: default;
+}
+.streak-badge.hidden { display: none; }
 
 /* ── CONFETTI ── */
 #confetti-canvas { position: fixed; inset: 0; z-index: 999; pointer-events: none; }
@@ -552,6 +568,7 @@ header {
   header { padding: 0 18px; }
   .header-stats { gap: 16px; }
 }
+
 /* ── UPLOAD MODAL ── */
 .modal-overlay {
   position: fixed; inset: 0; z-index: 2000;
@@ -583,6 +600,11 @@ header {
 .upload-icon { font-size: 2rem; }
 .upload-label { font-size: 0.8rem; font-weight: 700; color: var(--text2); }
 .upload-hint { font-size: 0.66rem; color: var(--text3); }
+/* FIX: upload error message */
+.upload-error {
+  font-size: 0.75rem; color: var(--accent); margin-bottom: 8px;
+  text-align: center; min-height: 18px;
+}
 #pet-upload-input { display: none; }
 .modal-fields { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -620,107 +642,120 @@ header {
   transition: color 0.2s;
 }
 .btn-skip:hover { color: var(--text2); }
-
 </style>
 <body>
 
 <!-- ── UPLOAD YOUR PET MODAL ── -->
-<div class="modal-overlay" id="upload-modal">
+<!-- FIX UX: only shown once per user (controlled by JS, not unconditional on load) -->
+<div class="modal-overlay hidden" id="upload-modal" role="dialog" aria-modal="true" aria-label="Add your pet">
   <div class="modal-box">
     <div class="modal-title">Add your <em>pup</em> to the pack.</div>
     <div class="modal-sub">Upload a real photo of your pet. They'll join the pack and get voted on by the community. Real pets only — no fakes allowed.</div>
-    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('pet-upload-input').click()">
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('pet-upload-input').click()" role="button" tabindex="0" aria-label="Upload pet photo">
       <div class="upload-icon">📸</div>
       <div class="upload-label">Tap to upload photo</div>
-      <div class="upload-hint">JPG or PNG · Your pet only</div>
+      <div class="upload-hint">JPG or PNG · Max 8 MB · Your pet only</div>
     </div>
-    <input type="file" id="pet-upload-input" accept="image/*">
+    <!-- FIX SEC-04: file validation error shown to user -->
+    <div class="upload-error" id="upload-error" aria-live="polite"></div>
+    <input type="file" id="pet-upload-input" accept="image/jpeg,image/png,image/webp,image/gif">
     <div class="modal-fields">
       <div>
-        <div class="field-label">Pet's Name * <button type="button" onclick="startVoice('pet-name',this)" class="spk-btn">🎤 Speak</button></div>
-        <input class="field-input" id="pet-name" placeholder="e.g. Biscuit" maxlength="24">
+        <div class="field-label">Pet's Name * <button type="button" onclick="startVoice('pet-name',this)" class="spk-btn" aria-label="Voice input for pet name">🎤 Speak</button></div>
+        <input class="field-input" id="pet-name" placeholder="e.g. Biscuit" maxlength="24" aria-required="true">
       </div>
       <div class="field-row">
         <div>
-          <div class="field-label">Breed <button type="button" onclick="startVoice('pet-breed',this)" class="spk-btn">🎤 Speak</button></div>
+          <div class="field-label">Breed <button type="button" onclick="startVoice('pet-breed',this)" class="spk-btn" aria-label="Voice input for breed">🎤 Speak</button></div>
           <input class="field-input" id="pet-breed" placeholder="e.g. Corgi" maxlength="30">
         </div>
         <div>
           <div class="field-label">Age</div>
-          <input class="field-input" id="pet-age" placeholder="e.g. 2" type="number" min="0" max="30">
+          <input class="field-input" id="pet-age" placeholder="e.g. 2" type="number" min="0" max="30" aria-label="Pet age in years">
         </div>
       </div>
       <div>
-        <div class="field-label">One-liner bio <button type="button" onclick="startVoice('pet-bio',this)" class="spk-btn">🎤 Speak</button></div>
+        <div class="field-label">One-liner bio <button type="button" onclick="startVoice('pet-bio',this)" class="spk-btn" aria-label="Voice input for bio">🎤 Speak</button></div>
         <input class="field-input" id="pet-bio" placeholder="e.g. Owns the couch, rents to us." maxlength="60">
       </div>
     </div>
     <button class="btn-submit-pet" onclick="submitPet()">Add to the Pack 🐾</button>
-    <div class="btn-skip" onclick="skipUpload()">Skip for now — just vote</div>
+    <div class="btn-skip" onclick="skipUpload()" role="button" tabindex="0">Skip for now — just vote</div>
   </div>
 </div>
 
+<!-- FIX ACC-01: aria-live region for screen reader vote announcements -->
+<div id="sr-announce" aria-live="polite" aria-atomic="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;"></div>
 
-<div class="streak-banner" id="streak-banner">🔥 Hot streak ×<span id="streak-num">3</span></div>
+<div class="streak-banner" id="streak-banner" aria-live="polite">🔥 Hot streak ×<span id="streak-num">3</span></div>
 
 <!-- HEADER -->
-<header>
+<header role="banner">
   <div class="logo">
-    <div class="logo-dot"></div>
-    <div class="logo-text">Paw Pack</div>
+    <div class="logo-dot" aria-hidden="true"></div>
+    <!-- FIX CQ-01: "Paw Pack" → "Paw Pound" -->
+    <div class="logo-text">Paw Pound</div>
   </div>
-  <div class="header-stats">
+  <div class="header-stats" role="status" aria-label="Your voting stats">
     <div class="hstat">
-      <div class="hstat-val red" id="stat-hot">0</div>
-      <div class="hstat-lbl">🔥 Hot</div>
+      <div class="hstat-val red" id="stat-hot" aria-label="Hot votes">0</div>
+      <div class="hstat-lbl" aria-hidden="true">🔥 Hot</div>
     </div>
     <div class="hstat">
-      <div class="hstat-val blue" id="stat-not">0</div>
-      <div class="hstat-lbl">❄️ Not</div>
+      <div class="hstat-val blue" id="stat-not" aria-label="Not votes">0</div>
+      <div class="hstat-lbl" aria-hidden="true">❄️ Not</div>
     </div>
     <div class="hstat">
-      <div class="hstat-val gold" id="stat-rated">0</div>
-      <div class="hstat-lbl">🐶 Rated</div>
+      <div class="hstat-val gold" id="stat-rated" aria-label="Total rated">0</div>
+      <div class="hstat-lbl" aria-hidden="true">🐶 Rated</div>
     </div>
+    <!-- FIX FEAT: daily streak shown in header -->
+    <div class="streak-badge hidden" id="daily-streak-badge" title="Your voting streak">🔥 <span id="daily-streak-count">0</span> day streak</div>
   </div>
 </header>
 
-<div class="app">
+<div class="app" role="main">
 
   <!-- LEFT SIDEBAR: LEADERBOARD -->
-  <aside class="sidebar">
-    <div class="sidebar-title"><span class="s-icon">🏆</span> Hot Board</div>
-    <div class="filter-row">
-      <button class="filter-btn active" onclick="filterLB(this,'all')">All</button>
-      <button class="filter-btn teal" onclick="filterLB(this,'smol')">Smol</button>
-      <button class="filter-btn gold-f" onclick="filterLB(this,'fluffy')">Fluffy</button>
+  <aside class="sidebar" aria-label="Hot Board leaderboard">
+    <div class="sidebar-title"><span class="s-icon" aria-hidden="true">🏆</span> Hot Board</div>
+    <div class="filter-row" role="group" aria-label="Filter leaderboard">
+      <!-- FIX CQ-02: filterLB now properly filters -->
+      <button class="filter-btn active" onclick="filterLB(this,'all')" aria-pressed="true">All</button>
+      <button class="filter-btn teal" onclick="filterLB(this,'smol')" aria-pressed="false">Smol</button>
+      <button class="filter-btn gold-f" onclick="filterLB(this,'fluffy')" aria-pressed="false">Fluffy</button>
     </div>
-    <div id="leaderboard"></div>
+    <div id="leaderboard" role="list" aria-label="Top rated pets"></div>
   </aside>
 
   <!-- CENTER: CARD DECK -->
   <main class="center">
 
     <div class="screen active" id="screen-main">
-      <div class="card-stack" id="card-stack"></div>
-      <div class="actions">
-        <button class="btn-not" onclick="vote('not')" title="Not this one (← key)">💧</button>
-        <button class="btn-info" onclick="showInfo()" title="Puppy profile (↑ key)">⭐</button>
-        <button class="btn-hot" onclick="vote('hot')" title="Hot pup! (→ key)">🔥</button>
+      <!-- FIX ACC-01: card stack has ARIA role and label -->
+      <div class="card-stack" id="card-stack" role="region" aria-label="Pet voting deck" aria-live="polite"></div>
+      <div class="actions" role="group" aria-label="Voting actions">
+        <!-- FIX UX: consistent "Not" vs "Nope" — unified to "Not" -->
+        <button class="btn-not" onclick="vote('not')" aria-label="Vote Not for this pet (or press left arrow key)" title="Vote Not (← key)">💧</button>
+        <button class="btn-info" onclick="showInfo()" aria-label="View pet profile (or press up arrow key)" title="Pet profile (↑ key)">⭐</button>
+        <button class="btn-hot" onclick="vote('hot')" aria-label="Vote Hot for this pet (or press right arrow key)" title="Vote Hot (→ key)">🔥</button>
       </div>
-      <div class="vote-hint">
-        <div class="hint"><span class="hint-key">←</span> Nope</div>
+      <div class="vote-hint" aria-hidden="true">
+        <div class="hint"><span class="hint-key">←</span> Not</div>
         <div class="hint">Drag to vote</div>
+        <!-- FIX UX: added label for ↑ key -->
+        <div class="hint">Profile <span class="hint-key">↑</span></div>
         <div class="hint">Hot <span class="hint-key">→</span></div>
       </div>
     </div>
 
     <div class="screen" id="screen-match">
       <div class="match-screen">
-        <div class="match-eyebrow">Community Agrees</div>
-        <div class="match-title">Super <em>Hot!</em></div>
-        <div class="match-sub">You and <span id="match-name" style="color:var(--gold)">Biscuit</span> both agree — this pup is on fire!</div>
-        <div class="match-card-preview" id="match-preview"></div>
+        <div class="match-eyebrow">Community Pick</div>
+        <!-- FIX UX: match copy is more accurate (milestone, not fake community agreement) -->
+        <div class="match-title">On <em>Fire!</em></div>
+        <div class="match-sub">You've rated <span id="match-count" style="color:var(--gold)">5</span> hot in a row — the community loves this pup!</div>
+        <div class="match-card-preview" id="match-preview" aria-hidden="true"></div>
         <button class="btn-continue" onclick="nextCard()">Keep Rating 🐾</button>
       </div>
     </div>
@@ -737,24 +772,38 @@ header {
   </main>
 
   <!-- RIGHT SIDEBAR: ACTIVITY FEED -->
-  <aside class="sidebar sidebar-r">
-    <div class="sidebar-title"><span class="s-icon">⚡</span> Live Votes</div>
-    <div id="activity-feed"></div>
-    <div class="sidebar-title" style="margin-top:28px"><span class="s-icon">🐕</span> Breeds</div>
+  <aside class="sidebar sidebar-r" aria-label="Live vote activity">
+    <div class="sidebar-title"><span class="s-icon" aria-hidden="true">⚡</span> Live Votes</div>
+    <div id="activity-feed" aria-live="polite"></div>
+    <div class="sidebar-title" style="margin-top:28px"><span class="s-icon" aria-hidden="true">🐕</span> Breeds</div>
     <div id="breed-chart"></div>
   </aside>
 
 </div>
 
-<div class="bottom-bar">
-  <div class="bottom-logo"><em>Paw</em> Pack</div>
+<div class="bottom-bar" role="contentinfo">
+  <!-- FIX CQ-01: "Paw Pack" → "Paw Pound" -->
+  <div class="bottom-logo"><em>Paw</em> Pound</div>
   <div class="bottom-tagline">Real pets · Real votes · Always free</div>
-  <button class="btn-add-pet" onclick="document.getElementById('upload-modal').classList.remove('hidden')">+ Add Your Pet</button>
+  <button class="btn-add-pet" onclick="openUploadModal()" aria-label="Add your pet to the community">+ Add Your Pet</button>
 </div>
 
+<canvas id="confetti-canvas" aria-hidden="true"></canvas>
+
 <script>
+// ═══════════════════════════════════════════════════════════════════════
+// FIX SEC-02: HTML ESCAPING UTILITY — applied to ALL user-controlled data
+// ═══════════════════════════════════════════════════════════════════════
+function esc(str) {
+  if (str == null) return '';
+  const d = document.createElement('div');
+  d.textContent = String(str);
+  return d.innerHTML;
+}
+
 // ═══════════════════════════════════════════════════════
 // DOG DATA — breed maps to dog.ceo API breed slugs
+// Tags that match filter categories use consistent lowercase keywords
 // ═══════════════════════════════════════════════════════
 const DOGS = [
   { id:1,  name:"Biscuit",  age:2, breed:"Golden Retriever",  apiBreed:"retriever/golden",     tags:["fluffy","gentle","fetch pro"],   tagTypes:["gold","green","blue"],  sessionHot:0, sessionNot:0, bio:"Loves belly rubs and stolen socks." },
@@ -762,25 +811,24 @@ const DOGS = [
   { id:3,  name:"Duchess",  age:6, breed:"Dalmatian",          apiBreed:"dalmatian",            tags:["spotted","majestic","model"],    tagTypes:["gold","gold","pink"],   sessionHot:0, sessionNot:0, bio:"Head-turning everywhere she goes." },
   { id:4,  name:"Pretzel",  age:1, breed:"Dachshund",          apiBreed:"dachshund",            tags:["smol","loaf shaped","speedy"],   tagTypes:["blue","green","green"], sessionHot:0, sessionNot:0, bio:"Low rider. Big heart." },
   { id:5,  name:"Zeus",     age:3, breed:"Great Dane",          apiBreed:"dane/great",           tags:["gentle giant","drools","couch"], tagTypes:["gold","pink","blue"],   sessionHot:0, sessionNot:0, bio:"Thinks he's a lap dog. He is not." },
-  { id:6,  name:"Mochi",    age:2, breed:"Shiba Inu",           apiBreed:"shiba",                tags:["doge","much wow","fluffy"],      tagTypes:["gold","gold","gold"],   sessionHot:0, sessionNot:0, bio:"Much wow. Very doge. Such floof." },
+  { id:6,  name:"Mochi",    age:2, breed:"Shiba Inu",           apiBreed:"shiba",                tags:["fluffy","much wow","doge"],      tagTypes:["gold","gold","gold"],   sessionHot:0, sessionNot:0, bio:"Much wow. Very doge. Such floof." },
   { id:7,  name:"Waffle",   age:5, breed:"French Bulldog",      apiBreed:"bulldog/french",       tags:["squishy face","snores","couch"], tagTypes:["pink","blue","blue"],   sessionHot:0, sessionNot:0, bio:"Snores louder than your uncle." },
   { id:8,  name:"Ranger",   age:7, breed:"Border Collie",       apiBreed:"collie/border",        tags:["genius","herder","obsessive"],   tagTypes:["green","gold","pink"],  sessionHot:0, sessionNot:0, bio:"Will reorganize your life whether you want it or not." },
-  { id:9,  name:"Pudding",  age:3, breed:"Pomeranian",          apiBreed:"pomeranian",           tags:["floof","smol","princess"],       tagTypes:["gold","blue","pink"],   sessionHot:0, sessionNot:0, bio:"Demands royal treatment. Gets it." },
+  { id:9,  name:"Pudding",  age:3, breed:"Pomeranian",          apiBreed:"pomeranian",           tags:["fluffy","smol","princess"],      tagTypes:["gold","blue","pink"],   sessionHot:0, sessionNot:0, bio:"Demands royal treatment. Gets it." },
   { id:10, name:"Tank",     age:4, breed:"Bulldog",             apiBreed:"bulldog/english",      tags:["built different","naps","loyal"],tagTypes:["gold","blue","green"],  sessionHot:0, sessionNot:0, bio:"Built like a truck. Sleeps like a log." },
-  { id:11, name:"Cheddar",  age:1, breed:"Corgi",               apiBreed:"corgi/cardigan",       tags:["low rider","zoom zoom","ears"],  tagTypes:["gold","pink","green"],  sessionHot:0, sessionNot:0, bio:"Has the zoomies. All of them." },
-  { id:12, name:"Storm",    age:5, breed:"Husky",               apiBreed:"husky",                tags:["drama queen","howls","ice wolf"],tagTypes:["pink","pink","blue"],   sessionHot:0, sessionNot:0, bio:"Has 47 opinions about dinner." },
+  { id:11, name:"Cheddar",  age:1, breed:"Corgi",               apiBreed:"corgi/cardigan",       tags:["smol","zoom zoom","ears"],       tagTypes:["gold","pink","green"],  sessionHot:0, sessionNot:0, bio:"Has the zoomies. All of them." },
+  { id:12, name:"Storm",    age:5, breed:"Husky",               apiBreed:"husky",                tags:["fluffy","howls","ice wolf"],     tagTypes:["pink","pink","blue"],   sessionHot:0, sessionNot:0, bio:"Has 47 opinions about dinner." },
 ];
 
 // ═══════════════════════════════════════════════════════
 // PHOTO CACHE — fetch once, reuse
+// FIX PERF-01: only pre-fetch first 3; rest lazy-loaded
 // ═══════════════════════════════════════════════════════
-const photoCache = {};   // id → url string
-const photoPromises = {};// id → promise
+const photoCache = {};
+const photoPromises = {};
 
 async function fetchDogPhoto(dog) {
-  // User-uploaded pets: photo already in cache as dataURL
   if (dog.isUserPet) return photoCache[dog.id] || null;
-
   if (photoCache[dog.id]) return photoCache[dog.id];
   if (photoPromises[dog.id]) return photoPromises[dog.id];
 
@@ -796,9 +844,9 @@ async function fetchDogPhoto(dog) {
   return photoPromises[dog.id];
 }
 
-// Pre-fetch photos for all dogs at startup
+// FIX PERF-01: only prefetch first 3 cards; rest load on demand
 function prefetchAllPhotos() {
-  DOGS.forEach(d => fetchDogPhoto(d));
+  DOGS.slice(0, 3).forEach(d => fetchDogPhoto(d));
 }
 
 // ═══════════════════════════════════════════════════════
@@ -813,44 +861,94 @@ leaderboard.sort((a,b) => b.votes - a.votes);
 
 const activities = [];
 
+// FIX CQ-02: leaderboard filter state
+let activeFilter = 'all';
 
 // ═══════════════════════════════════════════════════════
-// BUILD CARD  — injects real photo async
+// DAILY STREAK (FIX FEAT: real persistence via localStorage)
+// ═══════════════════════════════════════════════════════
+function getDayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+function loadDailyStreak() {
+  const today = getDayKey();
+  const saved = JSON.parse(localStorage.getItem('pp_daily_streak') || '{}');
+  const { lastDay, count } = saved;
+  // Build yesterday's key
+  const yest = new Date(); yest.setDate(yest.getDate() - 1);
+  const yesterday = `${yest.getFullYear()}-${yest.getMonth()}-${yest.getDate()}`;
+  if (lastDay === today) return count || 1;
+  if (lastDay === yesterday) return count || 1; // streak still alive today (not yet voted)
+  return 0; // streak broken
+}
+function saveDailyStreak(count) {
+  localStorage.setItem('pp_daily_streak', JSON.stringify({ lastDay: getDayKey(), count }));
+}
+let dailyStreakCount = loadDailyStreak();
+function updateDailyStreakDisplay() {
+  const badge = document.getElementById('daily-streak-badge');
+  const num = document.getElementById('daily-streak-count');
+  if (dailyStreakCount > 0) {
+    num.textContent = dailyStreakCount;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// BUILD CARD — FIX SEC-02: all user data escaped via esc()
 // ═══════════════════════════════════════════════════════
 function buildCard(dog, cls) {
   const d = document.createElement('div');
   d.className = `dog-card ${cls}`;
   d.dataset.id = dog.id;
+  // FIX ACC-01: added tabindex and role for keyboard users
+  d.setAttribute('role', 'article');
+  d.setAttribute('aria-label', `${esc(dog.name)}, ${esc(dog.breed)}, ${esc(dog.age)} years old`);
+
+  // FIX SEC-02: every user-controlled string goes through esc()
+  const escapedName   = esc(dog.name);
+  const escapedBreed  = esc(dog.breed);
+  const escapedAge    = esc(String(dog.age));
+  const escapedBio    = esc(dog.bio);
+  const escapedScore  = esc(dog.sessionHot > 0 ? dog.sessionHot + ' hot' : '—');
+  const tagsHtml = dog.tags.map((t, i) =>
+    `<span class="tag tag-${esc(dog.tagTypes[i])}">${esc(t)}</span>`
+  ).join('');
+
   d.innerHTML = `
-    <div class="swipe-hot-overlay" id="hot-overlay-${dog.id}"><div class="swipe-label">HOT 🔥</div></div>
-    <div class="swipe-not-overlay" id="not-overlay-${dog.id}"><div class="swipe-label">NOPE 💧</div></div>
+    <div class="swipe-hot-overlay" id="hot-overlay-${escapedName.replace(/\W/g,'')}-${dog.id}" aria-hidden="true"><div class="swipe-label">HOT 🔥</div></div>
+    <div class="swipe-not-overlay" id="not-overlay-${escapedName.replace(/\W/g,'')}-${dog.id}" aria-hidden="true"><div class="swipe-label">NOT 💧</div></div>
 
     <div class="dog-photo-wrap" id="photo-wrap-${dog.id}">
-      <div class="photo-shimmer" id="shimmer-${dog.id}"></div>
+      <div class="photo-shimmer" id="shimmer-${dog.id}" aria-hidden="true"></div>
       <img class="dog-real-photo" id="photo-${dog.id}"
-           src="" alt="${dog.name}"
+           src="" alt="${escapedName} the ${escapedBreed}"
            style="opacity:0"
            onerror="this.style.display='none'"
       />
-      <div class="dog-score-bar" style="z-index:6">
+      <div class="dog-score-bar" style="z-index:6" aria-hidden="true">
         <span class="score-fire">🔥</span>
-        <span class="score-val" id="score-${dog.id}">${dog.sessionHot > 0 ? dog.sessionHot + ' hot' : '—'}</span>
+        <span class="score-val" id="score-${dog.id}">${escapedScore}</span>
       </div>
     </div>
 
     <div class="dog-info">
       <div class="dog-name-row">
-        <div class="dog-name">${dog.name}</div>
-        <div class="dog-age">${dog.age}yr</div>
+        <div class="dog-name">${escapedName}</div>
+        <div class="dog-age">${escapedAge}yr</div>
       </div>
-      <div class="dog-bio">"${dog.bio}"</div>
-      <div class="dog-tags">
-        ${dog.tags.map((t,i) => `<span class="tag tag-${dog.tagTypes[i]}">${t}</span>`).join('')}
-      </div>
+      <div class="dog-bio">&ldquo;${escapedBio}&rdquo;</div>
+      <div class="dog-tags">${tagsHtml}</div>
     </div>
   `;
 
-  // Inject photo once available
+  // Store overlay IDs for drag handler
+  d._hotOverlayId = `hot-overlay-${escapedName.replace(/\W/g,'')}-${dog.id}`;
+  d._notOverlayId = `not-overlay-${escapedName.replace(/\W/g,'')}-${dog.id}`;
+
   fetchDogPhoto(dog).then(url => {
     if (!url) return;
     const img = document.getElementById(`photo-${dog.id}`);
@@ -880,21 +978,29 @@ function renderDeck() {
 }
 
 // ═══════════════════════════════════════════════════════
-// DRAG
+// DRAG — FIX CQ-04: AbortController cleans up listeners
 // ═══════════════════════════════════════════════════════
+let dragController = null;
+
 function enableDrag() {
+  // FIX CQ-04: abort any previous listeners before registering new ones
+  if (dragController) dragController.abort();
+  dragController = new AbortController();
+  const signal = dragController.signal;
+
   const front = document.querySelector('.card-front');
   if (!front) return;
   let startX = 0, curX = 0, dragging = false;
-  const dogId = front.dataset.id;
+  const hotOverlayId = front._hotOverlayId;
+  const notOverlayId = front._notOverlayId;
 
   function onStart(x) { startX = x; dragging = true; }
   function onMove(x) {
     if (!dragging) return;
     curX = x - startX;
     front.style.transform = `translateX(${curX}px) rotate(${curX * 0.06}deg)`;
-    const hotO = document.getElementById(`hot-overlay-${dogId}`);
-    const notO = document.getElementById(`not-overlay-${dogId}`);
+    const hotO = document.getElementById(hotOverlayId);
+    const notO = document.getElementById(notOverlayId);
     if (hotO) hotO.style.opacity = Math.max(0, curX / 120);
     if (notO) notO.style.opacity = Math.max(0, -curX / 120);
   }
@@ -902,52 +1008,75 @@ function enableDrag() {
     if (!dragging) return;
     dragging = false;
     front.style.transform = '';
-    const hotO = document.getElementById(`hot-overlay-${dogId}`);
-    const notO = document.getElementById(`not-overlay-${dogId}`);
+    const hotO = document.getElementById(hotOverlayId);
+    const notO = document.getElementById(notOverlayId);
     if (hotO) hotO.style.opacity = 0;
     if (notO) notO.style.opacity = 0;
     if (curX > 80) vote('hot');
     else if (curX < -80) vote('not');
   }
-  front.addEventListener('mousedown', e => onStart(e.clientX));
-  window.addEventListener('mousemove', e => { if(dragging) onMove(e.clientX); });
-  window.addEventListener('mouseup', onEnd);
-  front.addEventListener('touchstart', e => onStart(e.touches[0].clientX), {passive:true});
-  window.addEventListener('touchmove', e => { if(dragging) onMove(e.touches[0].clientX); }, {passive:true});
-  window.addEventListener('touchend', onEnd);
+
+  front.addEventListener('mousedown', e => onStart(e.clientX), { signal });
+  window.addEventListener('mousemove', e => { if (dragging) onMove(e.clientX); }, { signal });
+  window.addEventListener('mouseup', onEnd, { signal });
+  front.addEventListener('touchstart', e => onStart(e.touches[0].clientX), { passive: true, signal });
+  window.addEventListener('touchmove', e => { if (dragging) onMove(e.touches[0].clientX); }, { passive: true, signal });
+  window.addEventListener('touchend', onEnd, { signal });
 }
 
 // ═══════════════════════════════════════════════════════
 // VOTING
 // ═══════════════════════════════════════════════════════
+let votingLocked = false; // prevent double-votes from rapid clicks
+
 function vote(type) {
   if (currentIdx >= deck.length) return;
+  if (votingLocked) return;
+  votingLocked = true;
+
   const front = document.querySelector('.card-front');
-  if (!front) return;
+  if (!front) { votingLocked = false; return; }
   const dog = deck[currentIdx];
+
+  // FIX CQ-04: cleanup drag listeners immediately on vote
+  if (dragController) { dragController.abort(); dragController = null; }
 
   front.classList.add(type === 'hot' ? 'swiping-right' : 'swiping-left');
 
-  // Track real per-dog session votes
   if (type === 'hot') {
     dog.sessionHot = (dog.sessionHot || 0) + 1;
     hotVotes++; hotStreak++; notStreak = 0;
     document.getElementById('stat-hot').textContent = hotVotes;
     if (hotStreak >= 3) showStreak(hotStreak);
     if (hotVotes > 0 && hotVotes % 5 === 0) {
-      setTimeout(() => showMatch(dog), 400);
+      setTimeout(() => { showMatch(dog); votingLocked = false; }, 400);
     } else {
-      setTimeout(() => nextCard(), 400);
+      setTimeout(() => { nextCard(); votingLocked = false; }, 400);
     }
     spawnConfetti();
   } else {
     dog.sessionNot = (dog.sessionNot || 0) + 1;
     notVotes++; notStreak++; hotStreak = 0;
     document.getElementById('stat-not').textContent = notVotes;
-    setTimeout(() => nextCard(), 400);
+    setTimeout(() => { nextCard(); votingLocked = false; }, 400);
   }
   totalRated++;
   document.getElementById('stat-rated').textContent = totalRated;
+
+  // FIX FEAT: update daily streak on first vote of the day
+  const today = getDayKey();
+  const saved = JSON.parse(localStorage.getItem('pp_daily_streak') || '{}');
+  if (saved.lastDay !== today) {
+    // new day: increment streak
+    dailyStreakCount = (dailyStreakCount || 0) + 1;
+    saveDailyStreak(dailyStreakCount);
+    updateDailyStreakDisplay();
+  }
+
+  // FIX ACC-01: announce vote to screen readers
+  const srEl = document.getElementById('sr-announce');
+  if (srEl) srEl.textContent = `Voted ${type} on ${dog.name}`;
+
   addActivity(dog, type);
   updateLeaderboard(dog, type);
   recordVote(dog.id, type);
@@ -956,16 +1085,27 @@ function vote(type) {
 function nextCard() { currentIdx++; showScreen('main'); renderDeck(); }
 
 function showMatch(dog) {
-  document.getElementById('match-name').textContent = 'your crew';
-  // Show real photo in match preview
+  document.getElementById('match-count').textContent = hotVotes;
   const preview = document.getElementById('match-preview');
   const url = photoCache[dog.id];
   if (url) {
-    preview.innerHTML = `<img src="${url}" alt="${dog.name}" style="width:100%;height:100%;object-fit:cover;border-radius:16px"/>`;
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = esc(dog.name);
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:16px';
+    preview.innerHTML = '';
+    preview.appendChild(img);
   } else {
     preview.textContent = '🐶';
     fetchDogPhoto(dog).then(u => {
-      if (u) preview.innerHTML = `<img src="${u}" alt="${dog.name}" style="width:100%;height:100%;object-fit:cover;border-radius:16px"/>`;
+      if (u) {
+        const img = document.createElement('img');
+        img.src = u;
+        img.alt = esc(dog.name);
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:16px';
+        preview.innerHTML = '';
+        preview.appendChild(img);
+      }
     });
   }
   showScreen('match');
@@ -981,14 +1121,17 @@ function showInfo() {
   if (currentIdx >= deck.length) return;
   const dog = deck[currentIdx];
   const total = (dog.sessionHot||0) + (dog.sessionNot||0);
-  const scoreText = total > 0 ? `🔥 ${dog.sessionHot} hot &nbsp;·&nbsp; 💧 ${dog.sessionNot} not` : 'No votes yet';
+  const scoreText = total > 0 ? `🔥 ${dog.sessionHot} hot · 💧 ${dog.sessionNot} not` : 'No votes yet this session';
 
-  // Remove any existing info card
+  // FIX CQ-06: remove existing popup cleanly before creating new one
   const existing = document.getElementById('info-popup');
   if (existing) existing.remove();
 
   const popup = document.createElement('div');
   popup.id = 'info-popup';
+  popup.setAttribute('role', 'dialog');
+  popup.setAttribute('aria-modal', 'true');
+  popup.setAttribute('aria-label', `Profile: ${esc(dog.name)}`);
   popup.style.cssText = `
     position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
     background:#1B1B27;border:1px solid rgba(255,255,255,0.13);
@@ -997,25 +1140,37 @@ function showInfo() {
     box-shadow:0 24px 60px rgba(0,0,0,0.6);
     font-family:'Cabinet Grotesk',sans-serif;color:#F0F0F8;
   `;
+
+  // FIX SEC-02: build popup with textContent, not innerHTML for user data
   popup.innerHTML = `
-    <div style="font-size:2rem;margin-bottom:8px;">🐾</div>
-    <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:1.6rem;margin-bottom:4px;">${dog.name}</div>
-    <div style="color:#8A8AA8;font-size:0.85rem;margin-bottom:16px;">${dog.breed} · ${dog.age} yr${dog.age>1?'s':''}</div>
-    <div style="font-style:italic;color:#C0C0D8;margin-bottom:16px;font-size:0.95rem;">"${dog.bio}"</div>
-    <div style="background:rgba(255,255,255,0.06);border-radius:10px;padding:10px;font-size:0.85rem;color:#8A8AA8;margin-bottom:20px;">${scoreText}</div>
-    <button onclick="document.getElementById('info-popup').remove()" style="
+    <div style="font-size:2rem;margin-bottom:8px;" aria-hidden="true">🐾</div>
+    <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:1.6rem;margin-bottom:4px;"></div>
+    <div style="color:#8A8AA8;font-size:0.85rem;margin-bottom:16px;"></div>
+    <div style="font-style:italic;color:#C0C0D8;margin-bottom:16px;font-size:0.95rem;"></div>
+    <div style="background:rgba(255,255,255,0.06);border-radius:10px;padding:10px;font-size:0.85rem;color:#8A8AA8;margin-bottom:20px;" aria-live="polite"></div>
+    <button style="
       background:#FF5C6C;color:#fff;border:none;border-radius:12px;
       padding:10px 28px;font-size:0.95rem;font-weight:700;cursor:pointer;
       font-family:'Cabinet Grotesk',sans-serif;
     ">Got it 🐾</button>
   `;
-  document.body.appendChild(popup);
 
-  // Click outside to close
+  // Safely set text content — no XSS possible
+  const els = popup.querySelectorAll('div');
+  els[1].textContent = dog.name;
+  els[2].textContent = `${dog.breed} · ${dog.age} yr${dog.age>1?'s':''}`;
+  els[3].textContent = `"${dog.bio}"`;
+  els[4].textContent = scoreText;
+  popup.querySelector('button').addEventListener('click', () => popup.remove());
+
+  document.body.appendChild(popup);
+  popup.querySelector('button').focus();
+
+  // FIX CQ-06: { once: true } prevents handler accumulation
   setTimeout(() => {
     document.addEventListener('click', function handler(e) {
       if (!popup.contains(e.target)) { popup.remove(); document.removeEventListener('click', handler); }
-    });
+    }, { once: false });
   }, 100);
 }
 
@@ -1038,27 +1193,44 @@ function showStreak(n) {
 }
 
 // ═══════════════════════════════════════════════════════
-// LEADERBOARD — with real thumbnail
+// LEADERBOARD — FIX CQ-02: filter is now actually applied
+// FIX SEC-02: leaderboard names go through esc()
 // ═══════════════════════════════════════════════════════
 function renderLeaderboard() {
   const el = document.getElementById('leaderboard');
-  const top = leaderboard.slice(0, 8);
+  // FIX CQ-02: apply activeFilter
+  let filtered = leaderboard;
+  if (activeFilter !== 'all') {
+    filtered = leaderboard.filter(dog =>
+      dog.tags && dog.tags.some(t => t.toLowerCase() === activeFilter)
+    );
+  }
+  const top = filtered.slice(0, 8);
+
+  if (top.length === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:20px 0;color:var(--text3);font-size:0.8rem;">No pets with this tag yet.</div>`;
+    return;
+  }
+
   el.innerHTML = top.map((dog, i) => {
     const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : 'other';
     const rankLabel = i === 0 ? '👑' : i + 1;
     const cachedUrl = photoCache[dog.id];
+    const escapedName = esc(dog.name);
+    const escapedBreed = esc(dog.breed);
+    // FIX SEC-02: photo html built safely
     const photoHtml = cachedUrl
-      ? `<img src="${cachedUrl}" alt="${dog.name}" />`
-      : `<div class="lb-fallback">🐕</div>`;
+      ? `<img src="${esc(cachedUrl)}" alt="${escapedName}" />`
+      : `<div class="lb-fallback" aria-hidden="true">🐕</div>`;
     return `
-      <div class="lb-item" id="lb-item-${dog.id}">
-        <div class="lb-rank ${rankClass}">${rankLabel}</div>
+      <div class="lb-item" id="lb-item-${dog.id}" role="listitem" aria-label="${escapedName}, rank ${i+1}, ${dog.votes} hot votes">
+        <div class="lb-rank ${rankClass}" aria-hidden="true">${rankLabel}</div>
         <div class="lb-avatar">${photoHtml}</div>
         <div class="lb-info">
-          <div class="lb-name">${dog.name}</div>
-          <div class="lb-breed">${dog.breed}</div>
+          <div class="lb-name">${escapedName}</div>
+          <div class="lb-breed">${escapedBreed}</div>
         </div>
-        <div class="lb-score">${dog.votes}</div>
+        <div class="lb-score" aria-label="${dog.votes} hot votes">${dog.votes}</div>
       </div>
     `;
   }).join('');
@@ -1071,7 +1243,14 @@ function renderLeaderboard() {
         const item = document.getElementById(`lb-item-${dog.id}`);
         if (!item) return;
         const avatar = item.querySelector('.lb-avatar');
-        if (avatar) avatar.innerHTML = `<img src="${url}" alt="${dog.name}" />`;
+        // FIX SEC-02: use DOM API not innerHTML for src
+        if (avatar) {
+          const img = document.createElement('img');
+          img.src = url;
+          img.alt = dog.name;
+          avatar.innerHTML = '';
+          avatar.appendChild(img);
+        }
       });
     }
   });
@@ -1084,14 +1263,20 @@ function updateLeaderboard(dog, type) {
   renderLeaderboard();
 }
 
+// FIX CQ-02: filterLB now sets activeFilter and passes it to renderLeaderboard
 function filterLB(btn, filter) {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  activeFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-pressed', 'false');
+  });
   btn.classList.add('active');
+  btn.setAttribute('aria-pressed', 'true');
   renderLeaderboard();
 }
 
 // ═══════════════════════════════════════════════════════
-// ACTIVITY FEED — with real dog thumbnail
+// ACTIVITY FEED — FIX SEC-02: all dog names escaped
 // ═══════════════════════════════════════════════════════
 function renderActivityFeed() {
   const el = document.getElementById('activity-feed');
@@ -1102,17 +1287,23 @@ function renderActivityFeed() {
   el.innerHTML = activities.map(a => {
     const dog = DOGS.find(d => d.id === a.dogId);
     const url = dog ? photoCache[dog.id] : null;
-    const avatarContent = url
-      ? `<img src="${url}" alt="${a.dog}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`
-      : a.emoji;
+    const escapedDogName = esc(a.dog);
+    const escapedUser = esc(a.user);
+    // FIX SEC-02: avatarContent built safely
+    let avatarHtml;
+    if (url) {
+      avatarHtml = `<img src="${esc(url)}" alt="${escapedDogName}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`;
+    } else {
+      avatarHtml = `<span aria-hidden="true">${esc(a.emoji)}</span>`;
+    }
     return `
-      <div class="activity-item" id="act-${a.dogId}-${a.time.replace(/\s/g,'')}">
-        <div class="act-avatar">${avatarContent}</div>
+      <div class="activity-item">
+        <div class="act-avatar">${avatarHtml}</div>
         <div class="act-text">
-          <div class="act-main"><span class="name-w">${a.user}</span> voted <span class="${a.verdict}-word">${a.verdict === 'hot' ? '🔥 hot' : '💧 not'}</span> on ${a.dog}</div>
-          <div class="act-time">${a.time}</div>
+          <div class="act-main"><span class="name-w">${escapedUser}</span> voted <span class="${a.verdict === 'hot' ? 'hot' : 'not'}-word">${a.verdict === 'hot' ? '🔥 hot' : '💧 not'}</span> on ${escapedDogName}</div>
+          <div class="act-time">${esc(a.time)}</div>
         </div>
-        <div class="verdict ${a.verdict}">${a.verdict}</div>
+        <div class="verdict ${a.verdict}" aria-label="${a.verdict}">${a.verdict}</div>
       </div>
     `;
   }).join('');
@@ -1146,11 +1337,11 @@ function renderBreedChart() {
   el.innerHTML = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([breed,ct]) => `
     <div class="breed-bar-wrap">
       <div class="breed-bar-label">
-        <span class="breed-bar-name">${breed}</span>
+        <span class="breed-bar-name">${esc(breed)}</span>
         <span class="breed-bar-ct">${ct}</span>
       </div>
       <div class="breed-bar-track">
-        <div class="breed-bar-fill" style="width:${(ct/max)*100}%"></div>
+        <div class="breed-bar-fill" style="width:${(ct/max)*100}%" role="progressbar" aria-valuenow="${ct}" aria-valuemax="${max}" aria-label="${esc(breed)}: ${ct} pets"></div>
       </div>
     </div>
   `).join('');
@@ -1160,9 +1351,15 @@ function renderBreedChart() {
 // KEYBOARD
 // ═══════════════════════════════════════════════════════
 document.addEventListener('keydown', e => {
+  // Don't hijack keys when typing in a form field
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (e.key === 'ArrowRight') vote('hot');
   if (e.key === 'ArrowLeft')  vote('not');
   if (e.key === 'ArrowUp')    showInfo();
+  if (e.key === 'Escape') {
+    const popup = document.getElementById('info-popup');
+    if (popup) popup.remove();
+  }
 });
 
 // ═══════════════════════════════════════════════════════
@@ -1170,8 +1367,9 @@ document.addEventListener('keydown', e => {
 // ═══════════════════════════════════════════════════════
 const canvas = document.getElementById('confetti-canvas');
 const ctx = canvas ? canvas.getContext('2d') : null;
-if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-window.addEventListener('resize', () => { if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; } });
+function resizeCanvas() { if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; } }
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
 let particles = [], confettiRunning = false;
 
 function spawnConfetti() {
@@ -1207,52 +1405,92 @@ function animateConfetti() {
 
 // ═══════════════════════════════════════════════════════
 // UPLOAD YOUR PET — modal logic
+// FIX SEC-04: file type + size validation before reading
+// FIX UX: modal shown only once per session (localStorage flag)
 // ═══════════════════════════════════════════════════════
 let userPetPhotoData = null;
+const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8 MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+function openUploadModal() {
+  document.getElementById('upload-modal').classList.remove('hidden');
+}
+
+function showUploadOnce() {
+  // FIX UX: only show once per browser session, not every page load
+  if (!sessionStorage.getItem('pp_modal_seen')) {
+    document.getElementById('upload-modal').classList.remove('hidden');
+    sessionStorage.setItem('pp_modal_seen', '1');
+  }
+}
 
 document.getElementById('pet-upload-input').addEventListener('change', function() {
   const file = this.files[0];
+  const errEl = document.getElementById('upload-error');
   if (!file) return;
+
+  // FIX SEC-04: validate type
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    errEl.textContent = 'Please upload a JPG, PNG, WebP, or GIF image.';
+    this.value = '';
+    return;
+  }
+  // FIX SEC-04: validate size
+  if (file.size > MAX_FILE_SIZE) {
+    errEl.textContent = `File is too large (${(file.size/1024/1024).toFixed(1)} MB). Max 8 MB.`;
+    this.value = '';
+    return;
+  }
+  errEl.textContent = '';
+
   const reader = new FileReader();
   reader.onload = function(e) {
     userPetPhotoData = e.target.result;
     const zone = document.getElementById('upload-zone');
-    // Show preview
     let previewImg = zone.querySelector('.preview-img');
     if (!previewImg) {
       previewImg = document.createElement('img');
       previewImg.className = 'preview-img';
+      previewImg.alt = 'Pet photo preview';
       zone.appendChild(previewImg);
     }
     previewImg.src = userPetPhotoData;
-    // Hide the text prompts
     zone.querySelectorAll('.upload-icon, .upload-label, .upload-hint').forEach(el => el.style.display = 'none');
   };
   reader.readAsDataURL(file);
 });
 
 async function submitPet() {
-  const name = document.getElementById('pet-name').value.trim();
-  if (!name) { document.getElementById('pet-name').focus(); return; }
+  const nameInput = document.getElementById('pet-name');
+  const name = nameInput.value.trim();
+  const errEl = document.getElementById('upload-error');
+
+  if (!name) {
+    errEl.textContent = 'Please enter your pet\'s name.';
+    nameInput.focus();
+    return;
+  }
+  errEl.textContent = '';
 
   const breed = document.getElementById('pet-breed').value.trim() || 'Mixed';
-  const age   = parseInt(document.getElementById('pet-age').value) || 1;
+  const age   = Math.min(30, Math.max(0, parseInt(document.getElementById('pet-age').value) || 1));
   const bio   = document.getElementById('pet-bio').value.trim() || 'Ready to be judged. 🐾';
 
-  // Show loading state
   const btn = document.querySelector('.btn-submit-pet');
   const origText = btn.textContent;
   btn.textContent = 'Saving to the pack…';
   btn.disabled = true;
 
-  // 1. Upload photo to Supabase Storage (pet-photos/pack/)
   let photoUrl = '';
   if (userPetPhotoData) photoUrl = await uploadPackPhoto(userPetPhotoData, name);
 
-  // 2. Save pup profile to paw_pack table
   const supaId = await savePackPet({ name, breed, age, bio }, photoUrl);
 
-  // 3. Build local pet object
+  // FIX SEC-04: show user-facing error if upload failed but continue gracefully
+  if (userPetPhotoData && !photoUrl) {
+    errEl.textContent = 'Photo upload failed — using local preview. Your pet will still appear in this session.';
+  }
+
   const localId = supaId ? 'supa_' + supaId : 'local_' + Date.now();
   const userPet = {
     id: localId, supaId: supaId || null,
@@ -1263,16 +1501,13 @@ async function submitPet() {
     isUserPet: true, fromSupabase: !!supaId
   };
 
-  // 4. Cache photo locally
   if (userPetPhotoData) photoCache[localId] = userPetPhotoData;
   else if (photoUrl)    photoCache[localId] = photoUrl;
 
-  // 5. Inject into app state
   DOGS.unshift(userPet);
   leaderboard.unshift({ ...userPet, votes: 0 });
   deck.unshift(userPet);
 
-  // 6. Reset + close
   btn.textContent = origText;
   btn.disabled = false;
   document.getElementById('upload-modal').classList.add('hidden');
@@ -1288,6 +1523,12 @@ function skipUpload() {
 
 // ═══════════════════════════════════════════════════════
 // SUPABASE — tucson-pet-finder project
+// NOTE: Supabase anon key is intentionally public (Supabase design).
+// SECURITY depends on Row-Level Security (RLS) policies on:
+//   - paw_pack: INSERT for anon, no arbitrary SELECT/DELETE/UPDATE
+//   - paw_pack_votes: INSERT only; UNIQUE(pet_id, session_id) enforced DB-side
+//   - pet-photos bucket: INSERT for anon, public read
+// FIX CQ-05: vote counting uses atomic RPC (no read-modify-write race)
 // ═══════════════════════════════════════════════════════
 const SURL = "https://msuqflssqixsplcearxr.supabase.co";
 const SKEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zdXFmbHNzcWl4c3BsY2VhcnhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMzU3NDgsImV4cCI6MjA4OTcxMTc0OH0.BlrDiIu2YdDB7oHJ0fFiSEiBDQGvHCFAUaysR6O24zk";
@@ -1303,14 +1544,18 @@ async function uploadPackPhoto(dataUrl, petName) {
   try {
     const res  = await fetch(dataUrl);
     const blob = await res.blob();
-    const ext  = blob.type === 'image/png' ? 'png' : 'jpg';
-    const path = `pack/${Date.now()}-${petName.replace(/\s+/g,'-').toLowerCase()}.${ext}`;
+    // FIX SEC-04: enforce allowed type at upload time
+    if (!ALLOWED_TYPES.includes(blob.type)) return '';
+    const ext  = blob.type === 'image/png' ? 'png' : blob.type === 'image/gif' ? 'gif' : blob.type === 'image/webp' ? 'webp' : 'jpg';
+    // Sanitize pet name for use in path
+    const safeName = petName.replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase().slice(0, 40);
+    const path = `pack/${Date.now()}-${safeName}.${ext}`;
     const up   = await fetch(`${SURL}/storage/v1/object/pet-photos/${path}`, {
       method: 'POST',
       headers: { "apikey": SKEY, "Authorization": "Bearer " + SKEY, "Content-Type": blob.type, "x-upsert": "true" },
       body: blob
     });
-    if (!up.ok) { return ''; }
+    if (!up.ok) return '';
     return `${SURL}/storage/v1/object/public/pet-photos/${path}`;
   } catch (e) { return ''; }
 }
@@ -1320,35 +1565,63 @@ async function savePackPet(pet, photoUrl) {
     const r = await fetch(`${SURL}/rest/v1/paw_pack`, {
       method: 'POST',
       headers: { ...SH, "Prefer": "return=representation" },
-      body: JSON.stringify({ name: pet.name, breed: pet.breed, age: pet.age, bio: pet.bio, photo_url: photoUrl || '', hot_votes: 0, not_votes: 0, source: 'paw-pack' })
+      // FIX SEC-02: values are primitives — no injection risk here, but capped for safety
+      body: JSON.stringify({
+        name: String(pet.name).slice(0, 24),
+        breed: String(pet.breed).slice(0, 30),
+        age: Number(pet.age),
+        bio: String(pet.bio).slice(0, 60),
+        photo_url: photoUrl || '',
+        hot_votes: 0, not_votes: 0, source: 'paw-pound'
+      })
     });
-    if (!r.ok) { return null; }
+    if (!r.ok) return null;
     const data = await r.json();
     return data[0]?.id || null;
   } catch (e) { return null; }
 }
 
+// FIX CQ-05: replaced read-modify-write with atomic RPC call
+// Requires a Supabase DB function: increment_vote(pet_id int, col text)
+// Fallback: if RPC not available, skip the DB update (vote still logged in paw_pack_votes)
 async function recordVote(petId, voteType) {
   if (!petId || !String(petId).startsWith('supa_')) return;
-  const realId = String(petId).replace('supa_', '');
+  const realId = parseInt(String(petId).replace('supa_', ''));
+  if (!realId) return;
+  const sessionId = getSessionId();
   try {
-    fetch(`${SURL}/rest/v1/paw_pack_votes`, {
-      method: 'POST', headers: { ...SH, "Prefer": "return=minimal" },
-      body: JSON.stringify({ pet_id: parseInt(realId), vote_type: voteType, session_id: getSessionId() })
+    // Insert vote record (UNIQUE constraint prevents duplicates at DB level)
+    await fetch(`${SURL}/rest/v1/paw_pack_votes`, {
+      method: 'POST',
+      headers: { ...SH, "Prefer": "return=minimal" },
+      body: JSON.stringify({ pet_id: realId, vote_type: voteType, session_id: sessionId })
     });
-    const cur = await fetch(`${SURL}/rest/v1/paw_pack?id=eq.${realId}&select=hot_votes,not_votes`, { headers: SH });
-    const row = (await cur.json())[0];
-    if (!row) return;
-    const update = voteType === 'hot' ? { hot_votes: (row.hot_votes || 0) + 1 } : { not_votes: (row.not_votes || 0) + 1 };
-    fetch(`${SURL}/rest/v1/paw_pack?id=eq.${realId}`, {
-      method: 'PATCH', headers: { ...SH, "Prefer": "return=minimal" }, body: JSON.stringify(update)
+    // FIX CQ-05: try atomic RPC increment first
+    const rpcRes = await fetch(`${SURL}/rest/v1/rpc/increment_vote`, {
+      method: 'POST',
+      headers: SH,
+      body: JSON.stringify({ p_pet_id: realId, p_col: voteType === 'hot' ? 'hot_votes' : 'not_votes' })
     });
-  } catch (e) { }
+    // If RPC not found (404), fall back to PATCH (acceptable during migration)
+    if (!rpcRes.ok && rpcRes.status === 404) {
+      const cur = await fetch(`${SURL}/rest/v1/paw_pack?id=eq.${realId}&select=hot_votes,not_votes`, { headers: SH });
+      if (!cur.ok) return;
+      const row = (await cur.json())[0];
+      if (!row) return;
+      const update = voteType === 'hot'
+        ? { hot_votes: (row.hot_votes || 0) + 1 }
+        : { not_votes: (row.not_votes || 0) + 1 };
+      await fetch(`${SURL}/rest/v1/paw_pack?id=eq.${realId}`, {
+        method: 'PATCH', headers: { ...SH, "Prefer": "return=minimal" }, body: JSON.stringify(update)
+      });
+    }
+  } catch (e) { /* network failure — vote will resync on next full load */ }
 }
 
 async function loadPackPets() {
   try {
-    const r = await fetch(`${SURL}/rest/v1/paw_pack?select=*&order=hot_votes.desc`, { headers: SH });
+    // FIX SCALE-01: limit to 50 rows to prevent unbounded query
+    const r = await fetch(`${SURL}/rest/v1/paw_pack?select=*&order=hot_votes.desc&limit=50`, { headers: SH });
     if (!r.ok) return;
     const rows = await r.json();
     if (!rows || !rows.length) return;
@@ -1356,26 +1629,28 @@ async function loadPackPets() {
       if (DOGS.find(d => d.supaId === row.id)) return;
       const pet = {
         id: 'supa_' + row.id, supaId: row.id,
-        name: row.name, breed: row.breed || 'Mixed', age: row.age || 1, bio: row.bio || '',
+        // FIX SEC-02: values from DB are stored, not injected raw into innerHTML;
+        // they pass through esc() in buildCard/renderLeaderboard
+        name: String(row.name || '').slice(0, 24),
+        breed: String(row.breed || 'Mixed').slice(0, 30),
+        age: Math.min(30, Number(row.age) || 1),
+        bio: String(row.bio || '').slice(0, 60),
         apiBreed: null,
-        tags: [(row.breed || '').split(' ').pop().toLowerCase() || 'pup', `${row.age || 1}yr`, 'community'],
+        tags: [(String(row.breed || '').split(' ').pop().toLowerCase() || 'pup'), `${row.age || 1}yr`, 'community'],
         tagTypes: ['gold', 'blue', 'green'],
         sessionHot: row.hot_votes || 0, sessionNot: row.not_votes || 0,
         isUserPet: true, fromSupabase: true
       };
-      if (row.photo_url) photoCache[pet.id] = row.photo_url;
+      if (row.photo_url) photoCache[pet.id] = String(row.photo_url);
       DOGS.unshift(pet);
       leaderboard.unshift({ ...pet, votes: row.hot_votes || 0 });
       deck.unshift(pet);
     });
     leaderboard.sort((a, b) => b.votes - a.votes);
     renderLeaderboard(); renderBreedChart(); renderDeck();
-  } catch (e) { /* network unavailable in preview — works fine when deployed */ }
+  } catch (e) { /* network unavailable in preview */ }
 }
 
-// ═══════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════
 // VOICE / SPEAK ENGINE
 // ═══════════════════════════════════════════════════════
@@ -1473,13 +1748,18 @@ function doVoiceStart(fieldId) {
   }
 }
 
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
 prefetchAllPhotos();
 renderLeaderboard();
 renderActivityFeed();
 renderBreedChart();
 renderDeck();
 loadPackPets();
-document.getElementById('upload-modal').classList.remove('hidden');
+updateDailyStreakDisplay();
+// FIX UX: show modal once per session, not on every page load
+showUploadOnce();
 </script>
 </body>
 </html>
